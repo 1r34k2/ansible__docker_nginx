@@ -1,0 +1,10 @@
+- name: Deploying NGINX container on managed host
+  hosts: webservers
+  become: true
+  roles:
+    - nginx
+  vars:
+    container_count: 1
+    default_container_name: nginx
+    default_container_image: nginx:latest
+    ubuntu_release: jammy

@@ -1,0 +1,68 @@
+- name: Installing aptitude
+  ansible.builtin.apt:
+    name: aptitude
+    update_cache: true
+
+- name: Installing required system packages
+  ansible.builtin.apt:
+    pkg:
+      - ca-certificates
+      - curl
+      - gnupg
+    update_cache: true
+
+- name: Adding Docker GPG apt Key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  ansible.builtin.apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu "{{ ubuntu_release }}" stable
+    state: present
+
+- name: Update apt and install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  ansible.builtin.apt:
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+
+- name: Start Docker service
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Pull default Docker image
+  community.docker.docker_image:
+    name: "{{ default_container_image }}"
+    source: pull
+
+- name: Ensure that /workdir/nginx exists
+  ansible.builtin.file:
+    path: "/home/workdir/nginx"
+    state: "directory"
+
+- name: Copy nginx configuration file
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "/home/workdir/nginx/nginx.conf"
+  notify:
+    - Restart nginx
+
+- name: Start default Container
+  community.docker.docker_container:
+    name: "{{ default_container_name }}"
+    image: "{{ default_container_image }}"
+    state: started
+    ports:
+      - "80:80"
+    mounts:
+      - type: bind
+        source: "/home/workdir/nginx/nginx.conf"
+        target: "/etc/nginx/nginx.conf"
+
+

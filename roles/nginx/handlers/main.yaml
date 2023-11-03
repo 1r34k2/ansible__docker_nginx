@@ -1,0 +1,5 @@
+- name: Restart nginx
+  community.docker.docker_container:
+    name: "{{ default_container_name }}"
+    restart: true
+
